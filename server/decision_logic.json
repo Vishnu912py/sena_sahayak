@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "title": "Indian Ex-Servicemen PTSD Navigator - MVP Data Layer",
+    "disclaimer": "This tool provides educational information only. It is not legal or medical advice. Always verify with a Veteran Service Officer, a lawyer, or the relevant government office before acting. Source citations are provided for every rule so they can be independently verified.",
+    "crisis_resource": {
+      "name": "Vandrevala Foundation Helpline (24/7 mental health crisis support, India)",
+      "phone": "1860-2662-345 / 1800-2333-330",
+      "note": "Always displayed on every screen of the app, not just this data note."
+    },
+    "sources": [
+      "Department of Ex-Servicemen Welfare (desw.gov.in) - Pension Regulations & Casualty Pension Award pages",
+      "Pension Regulations for the Army, 1961 (Regulation 173)",
+      "Entitlement Rules for Casualty Pensionary Awards, 2008",
+      "Armed Forces Tribunal judgments (aftdelhi.nic.in)",
+      "Supreme Court of India judgments (via official reporting and legal aggregators)"
+    ]
+  },
+
+  "intake_questions": [
+    {
+      "id": "years_served",
+      "prompt": "How many years did you serve?",
+      "type": "number"
+    },
+    {
+      "id": "discharge_status",
+      "prompt": "What is your discharge status?",
+      "type": "single_select",
+      "options": ["Still serving", "Discharged - normal completion of service", "Discharged/Invalided on medical grounds", "Discharged for other reasons"]
+    },
+    {
+      "id": "discharge_year",
+      "prompt": "What year were you discharged? (leave blank if still serving)",
+      "type": "number"
+    },
+    {
+      "id": "echs_enrolled",
+      "prompt": "Are you currently enrolled in ECHS (Ex-Servicemen Contributory Health Scheme)?",
+      "type": "single_select",
+      "options": ["Yes", "No", "Not sure"]
+    },
+    {
+      "id": "symptom_onset",
+      "prompt": "When did your symptoms (nightmares, flashbacks, hypervigilance, etc.) start?",
+      "type": "single_select",
+      "options": ["During active service", "Shortly after discharge", "Years after discharge", "Not sure"]
+    },
+    {
+      "id": "medical_board_status",
+      "prompt": "Have you already been through a Medical Board or filed a disability pension claim?",
+      "type": "single_select",
+      "options": ["No, haven't started", "Medical Board in progress", "Medical Board found it attributable / aggravated", "Medical Board rejected as 'not attributable' or 'constitutional' or 'lifestyle related'", "Claim rejected by PCDA(Pension)", "Already appealed and rejected again"]
+    },
+    {
+      "id": "free_text_story",
+      "prompt": "In your own words, describe what happened and how you've been feeling. Include any specific incidents, dates, or witnesses if you remember them.",
+      "type": "free_text",
+      "note": "This field is passed to an LLM extraction step to pull out structured facts (incident dates, unit/posting, witnesses, symptom description) - NOT used to make legal determinations."
+    }
+  ],
+
+  "eligibility_rules": [
+    {
+      "rule_id": "echs_basic_eligibility",
+      "condition": "discharge_status in ['Discharged - normal completion of service', 'Discharged/Invalided on medical grounds'] AND receiving_any_pension == true",
+      "result": {
+        "eligible_for": "ECHS enrollment (if not already enrolled)",
+        "plain_language": "As a pensioner ex-serviceman, you and your dependents are generally eligible to enroll in ECHS for healthcare including mental health support, regardless of whether your PTSD claim has been decided.",
+        "source": "ECHS Handbook, Department of Ex-Servicemen Welfare (desw.gov.in)",
+        "confidence": "general_rule_verify_with_echs_office"
+      }
+    },
+    {
+      "rule_id": "disability_pension_basic_threshold",
+      "condition": "medical_board_status != 'No, haven't started' AND disability_assessment_percent >= 20",
+      "result": {
+        "eligible_for": "Disability pension consideration",
+        "plain_language": "Regulation 173 of the Pension Regulations for the Army, 1961 allows disability pension where a disability is attributable to or aggravated by military service and assessed at 20% or above.",
+        "source": "Pension Regulations for the Army, 1961, Regulation 173",
+        "confidence": "verified_from_case_law"
+      }
+    },
+    {
+      "rule_id": "presumption_of_soundness",
+      "condition": "medical_board_status in ['Medical Board rejected as \\'not attributable\\' or \\'constitutional\\' or \\'lifestyle related\\'', 'Claim rejected by PCDA(Pension)', 'Already appealed and rejected again']",
+      "result": {
+        "eligible_for": "Grounds for appeal - presumption of soundness",
+        "plain_language": "A member of the Armed Forces is presumed to have been in sound physical and mental condition at the time of entering service, unless a disability was specifically noted or recorded at entry. If nothing was noted on your entry medical exam, this presumption may work in your favor.",
+        "source": "Dharamvir Singh v. Union of India, Supreme Court, 2013 (8 SCR 1119)",
+        "confidence": "verified_supreme_court_precedent"
+      }
+    },
+    {
+      "rule_id": "unreasoned_board_rejection",
+      "condition": "medical_board_status in ['Medical Board rejected as \\'not attributable\\' or \\'constitutional\\' or \\'lifestyle related\\'']",
+      "result": {
+        "eligible_for": "Grounds for appeal - insufficient reasoning",
+        "plain_language": "Courts have ruled that a bare statement from a Medical Board that a disability is 'constitutional,' 'lifestyle related,' or 'not attributable to service' -- without individualized reasons explaining why -- is not enough to lawfully deny a disability pension. If your rejection letter does not explain the specific reasoning behind the conclusion, this may be a valid ground for appeal.",
+        "source": "Delhi High Court ruling on 'lifestyle disorder' denials (2026); Supreme Court ruling on unreasoned Medical Board reports in discharge/pension denial case",
+        "confidence": "verified_court_precedent"
+      }
+    },
+    {
+      "rule_id": "administrative_override_of_board",
+      "condition": "medical_board_status == 'Claim rejected by PCDA(Pension)' AND board_opinion_was_favorable == true",
+      "result": {
+        "eligible_for": "Grounds for appeal - authority overriding Medical Board",
+        "plain_language": "If your Medical Board found your condition attributable to or aggravated by military service, but a separate administrative authority (like PCDA Pension) rejected your claim anyway, this override has been challenged in tribunals. Whether an administrative authority can lawfully overrule a duly constituted Medical Board's opinion is a live legal question you should raise on appeal.",
+        "source": "Union of India v. Rajbir Singh, Supreme Court; Armed Forces Tribunal case law",
+        "confidence": "verified_court_precedent"
+      }
+    },
+    {
+      "rule_id": "no_action_yet",
+      "condition": "medical_board_status == 'No, haven\\'t started'",
+      "result": {
+        "eligible_for": "Starting point guidance",
+        "plain_language": "You haven't started the formal process yet. Your first step is typically a medical examination/Medical Board assessment. Before that, it can help to gather any documentation of incidents, dates, postings, and witnesses that connect your symptoms to your service.",
+        "source": "General process guidance, Department of Ex-Servicemen Welfare",
+        "confidence": "general_guidance"
+      }
+    }
+  ],
+
+  "action_checklist_templates": {
+    "not_started": [
+      "Gather service records (posting history, deployment/operation details)",
+      "Write down specific incidents with approximate dates, even if memory is imperfect",
+      "Note names of anyone who witnessed events or noticed changes in you",
+      "Request a medical examination / Medical Board assessment through your unit or the relevant Command Hospital",
+      "Consider enrolling in ECHS now if not already enrolled - you don't need a decided claim to access ECHS mental health care"
+    ],
+    "rejected_unreasoned": [
+      "Request a copy of the full Medical Board proceedings, not just the rejection letter",
+      "Check whether the rejection gives individualized reasons or just a general label ('constitutional', 'lifestyle related')",
+      "If reasons are missing or generic, cite the precedent on individualized reasoning in your appeal",
+      "File your statutory appeal within the required timeframe (verify current deadline with a Veteran Service Officer or lawyer, as these can change)",
+      "Consider approaching the Armed Forces Tribunal if statutory appeals are exhausted"
+    ],
+    "already_appealed": [
+      "Consult a lawyer experienced in Armed Forces Tribunal matters - many veteran advocacy groups provide free or low-cost referrals",
+      "Review whether the presumption-of-soundness argument was raised in your prior appeals",
+      "Gather any new medical evidence connecting your condition to service, if available",
+      "File before the Armed Forces Tribunal if you haven't already"
+    ]
+  },
+
+  "legal_precedent_library": [
+    {
+      "case_name": "Dharamvir Singh v. Union of India",
+      "citation": "(2013) 8 SCR 1119, Supreme Court of India",
+      "plain_summary": "A soldier discharged for epilepsy was denied disability pension. The Supreme Court held that a member of the Armed Forces is presumed to be in sound physical and mental condition upon entering service, unless a disability was noted or recorded at the time of entry. This presumption favors the veteran unless the government can show otherwise.",
+      "relevance": "Useful if nothing was noted about a mental health condition on your entry medical exam."
+    },
+    {
+      "case_name": "Union of India v. Rajbir Singh",
+      "citation": "Supreme Court of India",
+      "plain_summary": "The Court examined whether a Medical Board's opinion that a disability was 'not attributable to or aggravated by' service was, by itself, enough to deny a pension. It clarified how Pension Regulation 173 should be interpreted and applied.",
+      "relevance": "Useful for understanding how much weight a Medical Board's bare opinion should carry."
+    },
+    {
+      "case_name": "Rajumon T.M. v. Union of India",
+      "citation": "2025 INSC 644, Supreme Court of India",
+      "plain_summary": "A sepoy discharged for schizophrenia after 9+ years of service was denied pension based on a Medical Board finding of 'constitutional' disability with no stated reasons. The Supreme Court held that discharge or pension denial based on an unreasoned Medical Board report is unsustainable in law.",
+      "relevance": "Directly useful if your rejection letter doesn't explain its reasoning."
+    },
+    {
+      "case_name": "Delhi High Court ruling on 'lifestyle disorder' denial",
+      "citation": "Delhi High Court, 2026 (affirming Armed Forces Tribunal order)",
+      "plain_summary": "An Air Force veteran's disability pension was initially denied on the basis that his conditions were 'lifestyle related' rather than service-connected. The Court held that a bald statement of 'lifestyle disorder' or 'not attributable,' without individualized reasoning, is insufficient to deny a pension.",
+      "relevance": "Useful precedent if your rejection uses generic labels like 'lifestyle disorder' without explanation."
+    }
+  ],
+
+  "echs_polyclinics_sample": [
+    { "state": "Delhi", "city": "Delhi Cantt", "name": "ECHS Polyclinic Delhi Cantt", "contact": "Verify current number via desw.gov.in/ECHS circulars" },
+    { "state": "Maharashtra", "city": "Pune", "name": "ECHS Polyclinic Pune", "contact": "Verify current number via desw.gov.in/ECHS circulars" },
+    { "state": "Punjab", "city": "Chandimandir", "name": "ECHS Polyclinic Chandimandir", "contact": "Verify current number via desw.gov.in/ECHS circulars" },
+    { "state": "Karnataka", "city": "Bengaluru", "name": "ECHS Polyclinic Bengaluru", "contact": "Verify current number via desw.gov.in/ECHS circulars" },
+    { "state": "Kerala", "city": "Kochi", "name": "ECHS Polyclinic Kochi", "contact": "Verify current number via desw.gov.in/ECHS circulars" }
+  ]
+}

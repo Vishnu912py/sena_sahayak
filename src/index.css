@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+}
+
+:root {
+  --background: #eef2f5;
+  --foreground: #172b3a;
+  --card: #ffffff;
+  --border: #cbd5dc;
+  --primary: #123b5d;
+  --primary-foreground: #ffffff;
+  --muted: #e7edf1;
+  --muted-foreground: #536979;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #eef2f5;
+    --foreground: #172b3a;
+    --card: #ffffff;
+    --border: #cbd5dc;
+    --primary: #123b5d;
+    --primary-foreground: #ffffff;
+    --muted: #e7edf1;
+    --muted-foreground: #536979;
+  }
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-width: 320px;
+  background-color: var(--background);
+  background-image: linear-gradient(rgba(255, 255, 255, 0.42) 1px, transparent 1px);
+  background-size: 100% 32px;
+  color: var(--foreground);
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: 0;
+}
+
+.soldier-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  object-fit: contain;
+  filter: invert(1);
+}
+
+.soldier-icon-header {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+button, input {
+  font-family: inherit;
+}
+
+/* Government-service interfaces use crisp panels instead of app-like pills. */
+[class*="rounded-xl"] {
+  border-radius: 4px;
+}
+
+[class*="rounded-2xl"] {
+  border-radius: 4px 12px 12px 12px;
+}
+
+[class*="rounded-full"] {
+  border-radius: 3px;
+}
+
+header {
+  background-color: var(--primary) !important;
+  border-bottom-color: #0b2a43 !important;
+  color: #ffffff;
+}
+
+header h1,
+header a {
+  color: #ffffff;
+}
+
+header h1 svg {
+  color: #d9b44a;
+}
+
+main {
+  padding-top: 2rem;
+}
+
+input:focus,
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid rgba(217, 180, 74, 0.65);
+  outline-offset: 2px;
+}
